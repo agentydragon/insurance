@@ -1,4 +1,12 @@
+Model lezi v nejake podslozce repozitare a spousti se skriptem 'model.sh'. Tenhle skript
+se spousti z adresare, ve kterem je ulozeny.
+
 Model musi byt program spustitelny v labovych pocitacich.
-Kdyz se spusti s parametrem '--train', natrenuje se.
+
+Kdyz se spusti s parametrem '--train', natrenuje se. Na standartnim vstupu dostane
+normalni CSVcko, bud s titulky sloupecku, nebo bez nich. Natrenovana data si ulozi nekam
+do sve podslozky.
+
 Kdyz se spusti bez parametru, precte si na standarnim vstupu normalni vstupni CSVcko a
-vypise normalni vystupni CSVcko.
+vypise normalni vystupni CSVcko (vcetne hlavicek a vseho). Titulky sloupecku na vstupu
+dostat muze, ale nemusi. Titulky na vystupech vypsat MUSI.
