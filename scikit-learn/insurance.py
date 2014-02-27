@@ -1,4 +1,5 @@
 import csv
+import sys
 
 class ShoppingPoint:
     def load(self, row):
@@ -53,7 +54,8 @@ class ShoppingPoint:
         return [self.a, self.b, self.c, self.d, self.e, self.f, self.g]
 
 class Customer:
-    def __init__(self, id):
+    def __init__(self, customer_id):
+        self.customer_id = customer_id
         self.points = []
         self.selected_plan = None
 
@@ -73,27 +75,28 @@ class Data:
     def insert_row(self, row):
         point = ShoppingPoint()
         point.load(row)
-        if not point.customer_id in self.customers:
-            self.customers[point.customer_id] = Customer(point.customer_id)
-        self.customers[point.customer_id].insert_shopping_point(point)
+
+        cid = point.customer_id
+
+        if not cid in self.customers:
+            self.customers[cid] = Customer(cid)
+
+        self.customers[cid].insert_shopping_point(point)
 
     def load(self, f):
         reader = csv.reader(f, delimiter=',')
 
         for row in reader:
-            print(row)
-            sys.stdout.write('.')
-            sys.stdout.flush()
             if row[0] == 'customer_ID': # skip
                 next
             else:
                 self.insert_row(row)
 
-        print("Input loaded.")
+        print("Input loaded.", file=sys.stderr)
 
     def export_results(self, f):
         writer = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
         writer.writerow(['customer_ID', 'plan'])
-        
-        for cid, customer in self.customers.iteritems():
-            writer.writerow([cid, customer.export_selected_plan()])
+
+        for customer in self.customers.values():
+            writer.writerow([customer.customer_id, customer.export_selected_plan()])
