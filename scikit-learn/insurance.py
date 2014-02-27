@@ -81,9 +81,6 @@ class Data:
         reader = csv.reader(f, delimiter=',')
 
         for row in reader:
-            print(row)
-            sys.stdout.write('.')
-            sys.stdout.flush()
             if row[0] == 'customer_ID': # skip
                 next
             else:
