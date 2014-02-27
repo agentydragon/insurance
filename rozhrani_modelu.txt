@@ -1,0 +1,4 @@
+Model musi byt program spustitelny v labovych pocitacich.
+Kdyz se spusti s parametrem '--train', natrenuje se.
+Kdyz se spusti bez parametru, precte si na standarnim vstupu normalni vstupni CSVcko a
+vypise normalni vystupni CSVcko.
