@@ -1,6 +1,9 @@
 import sys
+import fileinput
 from sklearn import svm, metrics
 from sklearn.externals import joblib
+
+# TODO: uz jenom submitnuti posledniho navrhu da 0.53793.
 
 # A: 0/1/2
 # B: 0/1
@@ -47,39 +50,44 @@ def customer_to_data(customer):
   p = customer.points[-1]
   data.extend([p.a, p.b, p.c, p.d, p.e, p.f, p.g]) # , p.cost])
 
+  data.append(len(customer.points))
+
   return data
 
-class MyDataset:
-  def __init__(self, dataset, target_extract_function):
-    data = []
-    target = []
+def train_chosen_browsed_plan():
+  print("Training chosen-browsed-plan classifier.")
+  data = list(map(customer_to_data, dataset.customers.values()))
+  target = list(map(lambda c: c.did_choose_browsed_plan, dataset.customers.values()))
 
-    for customer in dataset.customers.values():
-      data.append(customer_to_data(customer))
-      target.append(target_extract_function(customer))
+  n = int(len(data) * 0.8)
 
-    self.data = data
-    self.target = target
+  nlc_classifier = svm.SVC(gamma=0.01)
+  nlc_classifier.fit(data[:n], target[:n])
+  predicted = classifier.predict(data[n:])
+  print("Classifier report for %s:\n%s\n" % (classifier, metrics.classification_report(target[n:], predicted)))
 
-if len(sys.argv) > 1 and sys.argv[1] == '--train':
-  print("Training on given data.")
-
+def train_attribute_classifiers():
+  print("Training attribute classifiers.")
   classifiers = []
-
   for i in range(0, 7):
     print("Training classifier of parameter %d/7" % (i + 1))
-    ds = MyDataset(dataset, lambda c: c.selected_plan[i])
+
+    data = map(customer_to_data, dataset.customers.values())
+    targets = map(lambda c: c.selected_plan[i], dataset.customers.values())
+
     classifier = svm.SVC(gamma=0.01)
 
-    n = len(ds.data) // 2
     print("Training on %d samples." % (n))
-    classifier.fit(ds.data[:n], ds.target[:n])
-    predicted = classifier.predict(ds.data[n:])
+    classifier.fit(data[:n], target[:n])
+    predicted = classifier.predict(data[n:])
     # print(predicted)
-    print("Classifier report for %s:\n%s\n" % (classifier, metrics.classification_report(ds.target[n:], predicted)))
+    print("Classifier report for %s:\n%s\n" % (classifier, metrics.classification_report(target[n:], predicted)))
     classifiers.append(classifier)
-
   joblib.dump(classifiers, "trained/svcs.pkl")
+
+if len(sys.argv) > 1 and sys.argv[1] == '--train':
+  train_chosen_browsed_plan()
+  train_attribute_classifiers()
 else:
   # Load the model.
   classifiers = joblib.load("trained/svcs.pkl")

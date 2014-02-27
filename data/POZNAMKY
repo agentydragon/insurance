@@ -1,1 +1,10 @@
 - test.csv obsahuje 55716 zakazniku (prvni je 10000001, posledni 10152722)
+- to, co nas zajima, jsou sloupecky 18 - 24
+
+- cat train.csv | cut -d, -f18-24 | sort | uniq -c | sort -nr:: ulozeno v 'kategorie.txt'
+	- data nemaji 2304 kategorii jak tvrdi, ale 'jenom' nejakych 1700.
+	- kategorii se zastoupenim >=100 je navic jenom 283.
+
+	==> TODO: postprocessing: nechci vratit zadnou z tech kategorii, co nenastanou (je jich neco pres 1/4)
+
+
