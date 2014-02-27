@@ -7,10 +7,10 @@ mkdir -p $DIR
 PYTHONPATH=$DIR/lib/python3.3/site-packages
 mkdir -p $PYTHONPATH
 export PYTHONPATH
-easy_install-python3.3 --prefix=$DIR scikit-learn
+easy_install-python3.3 --prefix=$DIR scikit-learn scipy
 
 echo
 echo "=== Running code. ==="
 echo
 
-python $*
+python3.3 $*
