@@ -1,6 +1,14 @@
 import csv
 import sys
 
+# A: 0/1/2
+# B: 0/1
+# C: 1/2/3/4, standardized to 0/1/2/3
+# D: 1/2/3, standardized to 0/1/2
+# E: 0/1
+# F: 0/1/2/3
+# G: 1/2/3/4, standardized to 0/1/2/3
+
 class ShoppingPoint:
   def load(self, row):
     customer_id, shopping_pt_num, record_type, day, time, state, location, group_size, homeowner, car_age, car_value, risk_factor, age_oldest, age_youngest, married_couple, c_previous, duration_previous, a, b, c, d, e, f, g, cost = row
@@ -32,9 +40,9 @@ class ShoppingPoint:
     self.married_couple = int(married_couple) # 0..1
 
     if c_previous == 'NA':
-      self.c_previous = 0 # TODO: lepsi N/A
+      self.c_previous = 100 # TODO: lepsi N/A
     else:
-      self.c_previous = int(c_previous) # previous C-value
+      self.c_previous = int(c_previous) - 1 # previous C-value; standardize to 0..3
 
     if duration_previous == 'NA':
       self.duration_previous = 0
@@ -43,11 +51,11 @@ class ShoppingPoint:
 
     if a != 'NA': self.a = int(a)
     if b != 'NA': self.b = int(b)
-    if c != 'NA': self.c = int(c)
-    if d != 'NA': self.d = int(d)
+    if c != 'NA': self.c = int(c) - 1
+    if d != 'NA': self.d = int(d) - 1
     if e != 'NA': self.e = int(e)
     if f != 'NA': self.f = int(f)
-    if g != 'NA': self.g = int(g)
+    if g != 'NA': self.g = int(g) - 1
     self.cost = int(cost)
 
     self.plan = [self.a, self.b, self.c, self.d, self.e, self.f, self.g]
@@ -65,13 +73,17 @@ class Customer:
       self.selected_plan = point.plan
 
   def export_selected_plan(self):
-    return ''.join(map(str, self.selected_plan))
+    plan = list(self.selected_plan)
+    plan[2] += 1
+    plan[3] += 1
+    plan[6] += 1
+    return ''.join(map(str, plan))
 
   def calculate_derived_data(self):
-    self.did_choose_browsed_plan = 0
+    self.did_choose_browsed_plan = False
     for point in self.points:
       if point.record_type == 0 and point.plan == self.selected_plan: # quote
-        self.did_choose_browsed_plan = 1
+        self.did_choose_browsed_plan = True
 
 class Data:
   def __init__(self):
