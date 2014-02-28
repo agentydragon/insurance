@@ -6,6 +6,8 @@ import sys
 import fileinput
 from sklearn import svm, metrics
 from sklearn.externals import joblib
+from sklearn.preprocessing import StandardScaler
+import multiprocessing
 
 print("Loading input.", file=sys.stderr)
 
@@ -24,6 +26,7 @@ dataset.load(sys.stdin)
 # TODO: vyzkouset:
 #   - nejaka ta chytra volba parametru
 #   - jeden velky klasifikator?
+#   - hodne pravdepodobne si vyberu plan, ktery jsem prohlizel hodnekrat!
 
 # TODO: je dobry napad tomu klasifikatoru davat jako vstup i prvni a posledni
 # quote, i kdyz ten klasifikator ma zhodnocovat jejich pravdepodobnost?
@@ -34,26 +37,62 @@ def customer_to_data(customer):
   data = []
 
   p = customer.points[0]
-  data.extend([p.day, p.group_size, p.homeowner, p.car_age, p.age_oldest, p.age_youngest, p.married_couple])
+  data.extend([p.day, p.group_size, p.homeowner, p.car_age, p.car_value, p.risk_factor, p.c_previous, p.age_oldest, p.age_youngest, p.married_couple, p.cost])
   # zajimave... on tomu cost moc nepridava...
-  data.extend([p.a, p.b, p.c, p.d, p.e, p.f, p.g]) #, p.cost])
+  #data.extend([p.a, p.b, p.c, p.d, p.e, p.f, p.g]) #, p.cost])
 
   # Further attributes:
   #   - time
   #   - state
   #   - location
-  #   - risk_factor
-  #   - c_previous
   #   - duration_previous
   #   - cost
 
-  p = customer.points[-1]
-  data.extend([p.a, p.b, p.c, p.d, p.e, p.f, p.g]) # , p.cost])
+  best, bestc = None, 0
+  for p in customer.points:
+    n = 0
+    for q in customer.points:
+      if q.plan == p.plan:
+        n += 1
+    if n >= bestc:
+      best, bestc = p.plan, n
 
+  data.extend(best)
+  # data.extend(customer.points[-1].plan) # , p.cost])
   data.append(len(customer.points))
 
   return data
 
+def classify_customer_plan(customer):
+  plan = []
+  data = scaler.transform(customer_to_data(customer))
+
+  probs = list(map(lambda i: classifiers[i].predict_proba(data)[0], range(0,7)))
+
+  best, best_score = None, None
+
+  for point in customer.points:
+    score = 1.0
+    for i in range(0,7):
+      score *= probs[i][point.plan[i]]
+  #  print("%s: score %f" % (str(point.plan), score), file=sys.stderr)
+    if best == None or score > best_score:
+      best = list(point.plan)
+      best_score = score
+  #print(file=sys.stderr)
+
+  # return [1,1,1,1,1,1,1]
+  # Select best hypothesis of each classifier:
+  ###  for i in range(0,7):
+  ###    plan.append(classifiers[i].predict(data)[0]) # 1
+  ###
+  ###  customer.selected_plan = plan
+
+  print("%d => %s" % (customer.customer_id, str(best)), file=sys.stderr)
+  return [customer.customer_id, best]
+
+classifiers = None
+scaler = None
 # An attempt to automatically find the cases that don't choose what they
 # browsed. This doesn't happen a lot, through, so it's dropped for now.
 ##  # TODO: normalizovat data na 0-1
@@ -72,10 +111,16 @@ def customer_to_data(customer):
 
 def train_attribute_classifiers():
   print("Training attribute classifiers.")
-  classifiers = []
   data = list(map(customer_to_data, dataset.customers.values()))
+
+  scaler = StandardScaler()
+  scaler.fit(data)
+  joblib.dump(scaler, "trained/scaler.pkl")
+  data = scaler.transform(data)
+
   n = int(len(data) * 0.8)
-  for i in range(0, 7):
+
+  def train_classifier(i):
     print("Training classifier of parameter %d/7" % (i + 1))
 
     target = list(map(lambda c: c.selected_plan[i], dataset.customers.values()))
@@ -87,7 +132,9 @@ def train_attribute_classifiers():
     predicted = classifier.predict(data[n:])
     # print(predicted)
     print("Classifier report for %s:\n%s\n" % (classifier, metrics.classification_report(target[n:], predicted)))
-    classifiers.append(classifier)
+    return classifier
+
+  classifiers = list(map(train_classifier, range(0,7)))
   joblib.dump(classifiers, "trained/svcs.pkl")
 
 if len(sys.argv) > 1 and sys.argv[1] == '--train':
@@ -95,37 +142,10 @@ if len(sys.argv) > 1 and sys.argv[1] == '--train':
   train_attribute_classifiers()
 else:
   # Load the model.
+  scaler = joblib.load("trained/scaler.pkl")
   classifiers = joblib.load("trained/svcs.pkl")
   print("Running.", file=sys.stderr)
-
-  for customer in dataset.customers.values():
-    plan = []
-    data = customer_to_data(customer)
-
-    probs = []
-    for i in range(0,7):
-      probs.append(classifiers[i].predict_proba(data)[0])
-
-    best, best_score = None, None
-
-    for point in customer.points:
-      score = 1.0
-      for i in range(0,7):
-        score *= probs[i][point.plan[i]]
-
-      print("%s: score %f" % (str(point.plan), score), file=sys.stderr)
-      if best == None or score > best_score:
-        best = list(point.plan)
-        best_score = score
-    print(file=sys.stderr)
-
-    customer.selected_plan = best
-
-    # Select best hypothesis of each classifier:
-    ###  for i in range(0,7):
-    ###    plan.append(classifiers[i].predict(data)[0]) # 1
-    ###  # customer.selected_plan = [1, 1, 1, 1, 1, 1, 1]
-    ###
-    ###  customer.selected_plan = plan
-
+  #for pair in pool.map(classify_customer_plan, dataset.customers.values()):
+  for pair in map(classify_customer_plan, dataset.customers.values()):
+    dataset.customers[pair[0]].selected_plan = pair[1]
   dataset.export_results(sys.stdout)

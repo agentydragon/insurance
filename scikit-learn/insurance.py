@@ -28,7 +28,10 @@ class ShoppingPoint:
     self.group_size = int(group_size)
     self.homeowner = int(homeowner) # 0..1
     self.car_age = int(car_age) # 0..
-    self.car_value = car_value # TODO: g/e/c/...?
+    if car_value == '':
+      self.car_value = -1
+    else:
+      self.car_value = ord(car_value) - ord('a') # g/e/c/...
 
     if risk_factor == 'NA':
       self.risk_factor = 0 # TODO: lepsi handling N/A
