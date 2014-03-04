@@ -1,0 +1,5 @@
+- reprezentovat staty jako 2D body hlavnich mest (globus) -- mozna tam bude davat smysl nejaka metrika podle vzdalenosti
+- kolik to da, kdyz dam (posledni vyber + C_last)?
+- kolik to da, kdyz zkusim 'vyber nejcastejsi'? kolik, kdyz budu vazit posledni podle casu (inverzne - posledni nejtezsi, predposledni druhy nejtezsi atd.)?
+
+- nafouknout trenovaci data - rozebrat na podmnoziny
