@@ -117,6 +117,18 @@ class Data:
 
     print("Input loaded.", file=sys.stderr)
 
+  def expand(self):
+    cust2 = {}
+    for customer in self.customers.values():
+      for x in range(1, len(customer.points)):
+        new_cid = customer.customer_id * 100 + x
+        cust2[new_cid] = Customer(new_cid)
+        cust2[new_cid].selected_plan = customer.selected_plan
+        cust2[new_cid].points = customer.points[:x]
+    self.customers = cust2
+
+    print("Dataset expanded (%d entries).", len(self.customers), file=sys.stderr)
+
   def export_results(self, f):
     writer = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
     writer.writerow(['customer_ID', 'plan'])

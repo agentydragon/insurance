@@ -14,6 +14,7 @@ print("Loading input.", file=sys.stderr)
 from insurance import Data
 dataset = Data()
 dataset.load(sys.stdin)
+dataset.expand()
 
 # Napady:
 #   - zkusit tomu dat za vstup tu hodnotu parametru, ktera dostala nejmensi cenu.
