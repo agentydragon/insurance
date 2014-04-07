@@ -102,10 +102,10 @@ def customer_to_data(customer):
   data.extend(plan_to_data(customer_most_common_plan(customer)))
 
   # Flat histogram of browsed plan features
-  # data.extend(customer_point_values_histogram(customer))
+  data.extend(customer_point_values_histogram(customer))
 
   # The last plan.
-  # data.extend(plan_to_data(customer.points[-1].plan))
+  data.extend(plan_to_data(customer.points[-1].plan))
 
   data.append(len(customer.points))
 
