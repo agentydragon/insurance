@@ -1,12 +1,12 @@
 # This model selects the most likely of the quoted plans.
 # The likelihood is determined by the product of class scores on trained SVMs.
 
-
+import random
 import sys
 import fileinput
 from sklearn import svm, metrics
 from sklearn.externals import joblib
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import StandardScaler, Imputer
 import multiprocessing
 
 print("Loading input.", file=sys.stderr)
@@ -14,7 +14,7 @@ print("Loading input.", file=sys.stderr)
 from insurance import Data
 dataset = Data()
 dataset.load(sys.stdin)
-dataset.expand()
+#dataset.expand()
 
 # Napady:
 #   - zkusit tomu dat za vstup tu hodnotu parametru, ktera dostala nejmensi cenu.
@@ -34,21 +34,42 @@ dataset.expand()
 
 # TODO: deterministicke experimenty?
 
-def customer_to_data(customer):
-  data = []
-
+def customer_consts_to_data(customer):
   p = customer.points[0]
-  data.extend([p.day, p.group_size, p.homeowner, p.car_age, p.car_value, p.risk_factor, p.c_previous, p.age_oldest, p.age_youngest, p.married_couple, p.cost])
-  # zajimave... on tomu cost moc nepridava...
-  #data.extend([p.a, p.b, p.c, p.d, p.e, p.f, p.g]) #, p.cost])
 
-  # Further attributes:
-  #   - time
-  #   - state
-  #   - location
-  #   - duration_previous
-  #   - cost
+  day = list(map(lambda i: 1 if p.day == i else 0, range(0, 7)))
+  cprev = list(map(lambda i: 1 if p.c_previous == i else 0, range(0, 4)))
 
+  return day + cprev + [
+      p.group_size,
+      p.homeowner,
+      p.car_age,
+      p.car_value,
+      p.risk_factor,
+      p.age_oldest, p.age_youngest,
+      p.married_couple,
+      p.cost]
+
+def customer_point_values_histogram(customer):
+  a = [0, 0, 0]
+  b = [0, 0]
+  c = [0, 0, 0, 0]
+  d = [0, 0, 0, 0]
+  e = [0, 0]
+  f = [0, 0, 0, 0]
+  g = [0, 0, 0, 0]
+  for p in customer.points:
+    a[p.a] += 1
+    b[p.b] += 1
+    c[p.c] += 1
+    d[p.d] += 1
+    e[p.e] += 1
+    f[p.f] += 1
+    g[p.g] += 1
+
+  return list(map(lambda i: float(i) / len(customer.points), a + b + c + d + e + f + g))
+
+def customer_most_common_plan(customer):
   best, bestc = None, 0
   for p in customer.points:
     n = 0
@@ -57,9 +78,35 @@ def customer_to_data(customer):
         n += 1
     if n >= bestc:
       best, bestc = p.plan, n
+  return best
 
-  data.extend(best)
-  # data.extend(customer.points[-1].plan) # , p.cost])
+def plan_to_data(p):
+  a = list(map(lambda i: 1 if p[0] == i else 0, range(0, 3)))
+  c = list(map(lambda i: 1 if p[2] == i else 0, range(0, 4)))
+  d = list(map(lambda i: 1 if p[3] == i else 0, range(0, 3)))
+  f = list(map(lambda i: 1 if p[5] == i else 0, range(0, 4)))
+  g = list(map(lambda i: 1 if p[6] == i else 0, range(0, 4)))
+  return a + [p[1]] + c + d + [p[4]] + f + g
+
+def customer_to_data(customer):
+  data = []
+  data.extend(customer_consts_to_data(customer))
+
+  # Further attributes:
+  #   - time
+  #   - state
+  #   - location
+  #   - duration_previous
+
+  # Most commonly browsed plan, fallback = last
+  data.extend(plan_to_data(customer_most_common_plan(customer)))
+
+  # Flat histogram of browsed plan features
+  # data.extend(customer_point_values_histogram(customer))
+
+  # The last plan.
+  # data.extend(plan_to_data(customer.points[-1].plan))
+
   data.append(len(customer.points))
 
   return data
@@ -82,7 +129,6 @@ def classify_customer_plan(customer):
       best_score = score
   #print(file=sys.stderr)
 
-  # return [1,1,1,1,1,1,1]
   # Select best hypothesis of each classifier:
   ###  for i in range(0,7):
   ###    plan.append(classifiers[i].predict(data)[0]) # 1
@@ -113,6 +159,11 @@ scaler = None
 def train_attribute_classifiers():
   print("Training attribute classifiers.")
   data = list(map(customer_to_data, dataset.customers.values()))
+
+  # print(data)
+  # imputer = Imputer(missing_values='NaN', strategy='most_frequent', axis=0)
+  # data = imputer.fit_transform(data)
+  # print(data)
 
   scaler = StandardScaler()
   scaler.fit(data)

@@ -1,5 +1,6 @@
 import csv
 import sys
+import numpy as np
 
 # A: 0/1/2
 # B: 0/1
@@ -21,7 +22,7 @@ class ShoppingPoint:
     self.state = state # TODO: state ID
 
     if location == 'NA':
-      self.location = 0 # TODO
+      self.location = -1 # TODO: np.nan
     else:
       self.location = int(location)
 
@@ -29,12 +30,12 @@ class ShoppingPoint:
     self.homeowner = int(homeowner) # 0..1
     self.car_age = int(car_age) # 0..
     if car_value == '':
-      self.car_value = -1
+      self.car_value = -1 # TODO: np.nan
     else:
       self.car_value = ord(car_value) - ord('a') # g/e/c/...
 
     if risk_factor == 'NA':
-      self.risk_factor = 0 # TODO: lepsi handling N/A
+      self.risk_factor = 0 # np.nan
     else:
       self.risk_factor = int(risk_factor)
 
@@ -43,12 +44,12 @@ class ShoppingPoint:
     self.married_couple = int(married_couple) # 0..1
 
     if c_previous == 'NA':
-      self.c_previous = 100 # TODO: lepsi N/A
+      self.c_previous = -1 # np.nan
     else:
       self.c_previous = int(c_previous) - 1 # previous C-value; standardize to 0..3
 
     if duration_previous == 'NA':
-      self.duration_previous = 0
+      self.duration_previous = np.nan
     else:
       self.duration_previous = int(duration_previous)
 
